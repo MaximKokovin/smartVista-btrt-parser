@@ -1,3 +1,3 @@
-const BTRTParser = require('brtp-parser');
+const Btrt = require('./btrt');
 
-module.exports = BTRTParser;
+module.exports = Btrt;
