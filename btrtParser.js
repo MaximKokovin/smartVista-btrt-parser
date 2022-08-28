@@ -10,25 +10,11 @@ const SPECIAL_CHARACTERS = {
 
 class BtrtParser extends EventEmitter  {
     constructor(options = {}) {
-        // const {batchSize, ...other} = options;
         super(options);
-        // this.batchSize = batchSize;
         this.on('continue_parsing', () => this.parse())
     }
     valLength = VAL_LENGTH;
-    // currentTagValLen = 0;
-    // applicationInOneFile = 0;
     parseResults = new Map();
-    // _resolve = null;
-    // _parsedChunks = [];
-    // _header = {};
-    //_notParsedHeader = '';
-    // _bodyApplJSON = {};
-    // _bodyApplsArr = [];
-    // _notParsedBody = {};
-    // _trailer = {};
-    // _notParsedTrailer = '';
-    // _chunks = []
     
     async parse(mainBtrtStr = '', token, opt = {},  restart = false) {
         let ctx = this.parseResults.get(token);
@@ -40,7 +26,6 @@ class BtrtParser extends EventEmitter  {
             if (ctx) throw new Error(`Parse token: ${token} is not unique`);
             else {
                 ctx = {
-                    // batchSize: opt.batchSize,
                     header: {},
                     notParsedHeader: '', 
                     bodyApplJSON: {},
@@ -56,99 +41,89 @@ class BtrtParser extends EventEmitter  {
                 this.parseResults.set(token, ctx);
             }
         }
-        // const results = this.parseResults.get(token);
-        // let /*structure,*/ parse = true;
-        // let notParsedStr = mainBtrtStr;
 
-        // if (typeof mainBtrtStr === 'string') {    
-            while (parse || !ctx._forceStop) {
-                if (!notParsedStr.length && !ctx.chunks.length) {
-                    parse = false;
-                    break;
-                };
-
-                await checkEventLoop();
-
-                let tagType, chunkStr,parentTagType, parentName = '';
-                const lastElem = ctx.chunks.length - 1
-                const chunk = ctx.chunks[lastElem];
-                if (chunk) ({chunkStr, parentTagType, parentName/*, parsedFinish*/} = chunk)
-                let [tagName, len, tagVal, parsedEndPos, hexLenVal] = this._parse(chunkStr || notParsedStr);
-                tagType = this._checkTagType(tagName);
-                
-                if (tagType === 'header') {
-                    ctx.chunks.push({chunkStr: tagVal, parentTagType: 'header', parentName: tagName/*, parsedFinish: false*/});
-                    notParsedStr = removeSpecialCharacters(notParsedStr.slice(parsedEndPos/* + 2*/));
-                    ctx.notParsedHeader = `${tagName}${hexLenVal}${tagVal}`
-                    ctx.header[tagName] = {};
-                    this.emit('header');
-                    // parse = false;
-                    continue;
-                } else if (tagType === 'simpeTag') {
-                    const parentTags = parentName.split('.');
-                    let perentSection = parentTagType === 'header' || parentTagType === 'trailer' ?
-                        ctx[`${parentTagType}`] : 
-                       ctx.bodyApplJSON;
-                    let parentObj = null;
-                    parentTags.forEach(parentTag => {
-                        parentObj = parentObj ? parentObj[parentTag] : perentSection[parentTag];
-                    });
-                    parentObj[tagName] = tagVal.toString('utf-8');
-
-                    chunkStr = chunkStr.slice(parsedEndPos);
-                    
-                    if (!chunkStr.length || chunkStr.length === 1) {
-                        ctx.chunks.splice(lastElem, 1);
-                        continue
-                    }
-                    chunk.chunkStr = chunkStr;
-                } else if (tagType === 'combineTag') {
-                    const parentTags = parentName.split('.');
-                    let perentSection = parentTagType === 'header' || parentTagType === 'trailer' ?
-                        ctx[`${parentTagType}`] : 
-                       ctx.bodyApplJSON;
-                    let parentObj = null;
-                    parentTags.forEach(parentTag => {
-                        parentObj = parentObj ? parentObj[parentTag] : perentSection[parentTag];
-                    });
-                    parentObj[tagName] = {};
-
-                    let {chunkStr} = chunk;
-                    const perentChunkLen = chunkStr.length
-                    if (perentChunkLen > parsedEndPos) {
-                        chunk.chunkStr = chunkStr.slice(parsedEndPos);
-                    } else if (perentChunkLen === parsedEndPos) {
-                        ctx.chunks.splice(lastElem, 1);
-                    }
-                    ctx.chunks.push({chunkStr: tagVal, parentTagType: chunk.parentTagType, parentName: `${chunk.parentName}.${tagName}`});
-                    continue;
-                } else if (tagType === 'applicationTag') {
-                    ctx.applicationInOneFile++;
-                    // if (ctx.applicationInOneFile > this.batchSize) {
-                    //     App.getInstance().logger.error(`File too large. Batch size exceeded. Current batch size ${this.batchSize}`);
-                    //     throw ErrorFactoryBase.create.ERROR('File too large. Batch size exceeded.') 
-                    // }
-                    const applicationObj = {}
-                    ctx.bodyApplJSON[tagName] = applicationObj;
-                    ctx.bodyApplsArr.push({[tagName]: applicationObj});
-                    ctx.chunks.push({chunkStr: tagVal, parentTagType: 'applicationTag', parentName: `${tagName}`});
-                    notParsedStr = removeSpecialCharacters(notParsedStr.slice(parsedEndPos/* + 2*/));
-                    ctx.notParsedBody.push({[tagName]: `${tagName}${hexLenVal}${tagVal}`});
-                    this.emit('applicationTag');
-                    // parse = false;
-                    continue;
-                } else if (tagType === 'trailer') {
-                    ctx.chunks.push({chunkStr: tagVal, parentTagType: 'trailer', parentName: `${tagName}`});
-                    notParsedStr = removeSpecialCharacters(notParsedStr.slice(parsedEndPos/* + 2*/));
-                    ctx.notParsedTrailer = `${tagName}${hexLenVal}${tagVal}`
-                    ctx.trailer[tagName] = {};
-                    this.emit('trailer');
-                    // parse = false;
-                }
+        while (parse || !ctx._forceStop) {
+            if (!notParsedStr.length && !ctx.chunks.length) {
+                parse = false;
+                break;
             };
-        // } else {
-            // throw 'data not instanse of Buffer'
-        // }
+
+            await checkEventLoop();
+
+            let tagType, chunkStr,parentTagType, parentName = '';
+            const lastElem = ctx.chunks.length - 1
+            const chunk = ctx.chunks[lastElem];
+            if (chunk) ({chunkStr, parentTagType, parentName/*, parsedFinish*/} = chunk)
+            let [tagName, len, tagVal, parsedEndPos, hexLenVal] = this._parse(chunkStr || notParsedStr);
+            tagType = this._checkTagType(tagName);
+            
+            if (tagType === 'header') {
+                ctx.chunks.push({chunkStr: tagVal, parentTagType: 'header', parentName: tagName/*, parsedFinish: false*/});
+                notParsedStr = removeSpecialCharacters(notParsedStr.slice(parsedEndPos/* + 2*/));
+                ctx.notParsedHeader = `${tagName}${hexLenVal}${tagVal}`
+                ctx.header[tagName] = {};
+                this.emit('header');
+                // parse = false;
+                continue;
+            } else if (tagType === 'simpeTag') {
+                const parentTags = parentName.split('.');
+                let perentSection = parentTagType === 'header' || parentTagType === 'trailer' ?
+                    ctx[`${parentTagType}`] : 
+                    ctx.bodyApplJSON;
+                let parentObj = null;
+                parentTags.forEach(parentTag => {
+                    parentObj = parentObj ? parentObj[parentTag] : perentSection[parentTag];
+                });
+                parentObj[tagName] = tagVal.toString('utf-8');
+
+                chunkStr = chunkStr.slice(parsedEndPos);
+                
+                if (!chunkStr.length || chunkStr.length === 1) {
+                    ctx.chunks.splice(lastElem, 1);
+                    continue
+                }
+                chunk.chunkStr = chunkStr;
+            } else if (tagType === 'combineTag') {
+                const parentTags = parentName.split('.');
+                let perentSection = parentTagType === 'header' || parentTagType === 'trailer' ?
+                    ctx[`${parentTagType}`] : 
+                    ctx.bodyApplJSON;
+                let parentObj = null;
+                parentTags.forEach(parentTag => {
+                    parentObj = parentObj ? parentObj[parentTag] : perentSection[parentTag];
+                });
+                parentObj[tagName] = {};
+
+                let {chunkStr} = chunk;
+                const perentChunkLen = chunkStr.length
+                if (perentChunkLen > parsedEndPos) {
+                    chunk.chunkStr = chunkStr.slice(parsedEndPos);
+                } else if (perentChunkLen === parsedEndPos) {
+                    ctx.chunks.splice(lastElem, 1);
+                }
+                ctx.chunks.push({chunkStr: tagVal, parentTagType: chunk.parentTagType, parentName: `${chunk.parentName}.${tagName}`});
+                continue;
+            } else if (tagType === 'applicationTag') {
+                ctx.applicationInOneFile++;
+                const applicationObj = {}
+                ctx.bodyApplJSON[tagName] = applicationObj;
+                ctx.bodyApplsArr.push({[tagName]: applicationObj});
+                ctx.chunks.push({chunkStr: tagVal, parentTagType: 'applicationTag', parentName: `${tagName}`});
+                notParsedStr = removeSpecialCharacters(notParsedStr.slice(parsedEndPos/* + 2*/));
+                ctx.notParsedBody.push({[tagName]: `${tagName}${hexLenVal}${tagVal}`});
+                this.emit('applicationTag');
+                // parse = false;
+                continue;
+            } else if (tagType === 'trailer') {
+                ctx.chunks.push({chunkStr: tagVal, parentTagType: 'trailer', parentName: `${tagName}`});
+                notParsedStr = removeSpecialCharacters(notParsedStr.slice(parsedEndPos/* + 2*/));
+                ctx.notParsedTrailer = `${tagName}${hexLenVal}${tagVal}`
+                ctx.trailer[tagName] = {};
+                this.emit('trailer');
+                // parse = false;
+            }
+        };
+
         if (ctx._forceStop) {
             this.parseResults.delete(token);
             return [null, null, new Error('Parsing was forse stop')]
@@ -263,17 +238,9 @@ class BtrtParser extends EventEmitter  {
         this.parseResults.delete(token);
     }
 
-    // setThrottel(throttel) {
-    //     this._resolve = throttel
-    // }
-
-    // getRes() {
-    //     return {header: ctx.header, body:ctx.bodyApplJSON, trailer: ctx.trailer};
-    // }
 }
 
 const removeSpecialCharacters = (string) => {
-    // let round = 3;
     let shift = 0;
     for (let i = 0; string.length > i; i++) {
         const char = string[i];
