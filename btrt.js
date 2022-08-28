@@ -15,6 +15,7 @@ class BTRT {
             const res = await this._parser.parse(btrtString, operationToken, opt);
             return [...res, null];
        } catch (err) {
+            this._parser.deleteCtx(token|| operationToken);
             return [null, null, err];
        } 
        

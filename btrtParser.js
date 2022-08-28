@@ -60,8 +60,7 @@ class BtrtParser extends EventEmitter  {
         // let /*structure,*/ parse = true;
         // let notParsedStr = mainBtrtStr;
 
-        // if (typeof mainBtrtStr === 'string') {
-
+        // if (typeof mainBtrtStr === 'string') {    
             while (parse || !ctx._forceStop) {
                 if (!notParsedStr.length && !ctx.chunks.length) {
                     parse = false;
@@ -166,7 +165,7 @@ class BtrtParser extends EventEmitter  {
         else if (tagName.startsWith('FFFF')) return 'applicationTag';
         else if (tagName.startsWith('FF')) return 'combineTag';
         else if (tagName.startsWith('DF')) return 'simpeTag';
-        return undefined;
+        throw new Error(`[PARSING ERROR] tag name "${tagName}" is undefined`);
     }
 
     _getTagName(string){
@@ -258,6 +257,10 @@ class BtrtParser extends EventEmitter  {
             const allCtx = this.parseResults.values();
             allCtx.forEach(ctx => ctx._forceStop = true);
         }
+    }
+
+    deleteCtx(token) {
+        this.parseResults.delete(token);
     }
 
     // setThrottel(throttel) {
